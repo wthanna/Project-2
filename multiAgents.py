@@ -204,7 +204,66 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        
+        def minimax(gameState, agentIndex, depth):
+
+            #stop searching when game ends or at max depth
+            if gameState.isWin() or gameState.isLose() or depth == self.depth:
+                return self.evaluationFunction(gameState)
+        
+            legalActions = gameState.getLegalActions(agentIndex)
+
+            if not legalActions:
+                return self.evaluationFunction(gameState)
+
+            #setting score to either max or min
+            if agentIndex == 0:
+                bestScore = float('-inf')
+            else:
+                bestScore = float('inf')
+
+            for action in legalActions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+
+                #finding next agent
+                nextAgent = (agentIndex + 1) % gameState.getNumAgents()
+
+                #increase depth after all agent made thier move
+                if nextAgent == 0:
+                    nextDepth = depth +1
+                else:
+                    nextDepth = depth
+
+                #recurs for successor
+                value = minimax(successor, nextAgent, nextDepth)
+
+                #Pacman
+                if agentIndex == 0:
+                    bestScore = max(bestScore, value)
+                #Ghosts
+                else:
+                    bestScore = min(bestScore, value)
+
+            return bestScore
+        #pacman's turn
+        legalActions = gameState.getLegalActions(0)
+
+        bestScore = float('-inf')
+        bestAction = None
+
+        for action in legalActions:
+            successor = gameState.generateSuccessor(0, action)
+
+            #first ghost moves
+            score = minimax(successor, 1, 0)
+
+            if score > bestScore:
+                bestScore = score
+                bestAction = action
+
+        return bestAction
+        #util.raiseNotDefined()
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
