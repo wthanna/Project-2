@@ -38,7 +38,7 @@ class ReflexAgent(Agent):
         Just like in the previous project, getAction takes a GameState and returns
         some Directions.X for some X in the set {NORTH, SOUTH, WEST, EAST, STOP}
         """
-        # Collect legal moves and successor states/north/south/east/wert
+        # Collect legal moves and successor states
         legalMoves = gameState.getLegalActions()
 
         # Choose one of the best actions
@@ -50,7 +50,6 @@ class ReflexAgent(Agent):
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
 
         "Add more of your code here if you want to"
-
 
         return legalMoves[chosenIndex]
 
@@ -76,71 +75,8 @@ class ReflexAgent(Agent):
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-        #newCapsules = successorGameState.getCapsules()
-        #currentCapsules = currentGameState.getCapsules()
-
         "*** YOUR CODE HERE ***"
-        foodList = newFood.asList()
-        Fdistances = []
-        scaredGhosts = []
-        dangerousGhosts =[]
-        foodWeight = 3
-        scaredWeight = 2
-        dangerousWeight = 4
-        dangerThreshold = 5
-        score = 0
-
-        for foodPosition in foodList:
-            distance = manhattanDistance(newPos, foodPosition)
-            Fdistances.append(distance)
-            
-
-        for ghost in newGhostStates:
-            ghostPosition = ghost.getPosition()
-            distance = manhattanDistance(newPos, ghostPosition)
-
-            if ghost.scaredTimer > 0:
-                scaredGhosts.append(distance)
-            else:
-                dangerousGhosts.append(distance)
-
-        
-        
-        if len(Fdistances) > 0:
-            closestFood = min(Fdistances)
-        else:
-             closestFood = None
-
-        if len(scaredGhosts) > 0:
-            closestScaredGhost = min(scaredGhosts)
-        else:
-            closestScaredGhost = None
-
-        if len(dangerousGhosts) > 0:
-            closestDangerousGhost = min(dangerousGhosts)
-        else:
-            closestDangerousGhost = None
-
-           
-        if closestFood is not None:
-            score += foodWeight / (closestFood + 1)
-
-        if closestScaredGhost is not None:
-            score += -closestScaredGhost * scaredWeight
-
-        if closestDangerousGhost is not None:
-            #score += closestDangerousGhost * dangerousWeight
-            if closestDangerousGhost <= dangerThreshold and closestDangerousGhost > 0:
-                penalty = -dangerousWeight/closestDangerousGhost
-                score += penalty
-
-        #if action == Directions.STOP:
-        #    score -= 10
-
-        #if len(newCapsules) < len(currentCapsules):
-        #    score += 50
-
-        return successorGameState.getScore() + score
+        return successorGameState.getScore()
 
 
 def scoreEvaluationFunction(currentGameState):
@@ -217,7 +153,54 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def alphaBeta(state, turn_index, alpha, beta):
+            agent_index = turn_index % gameState.getNumAgents()
+            current_depth = turn_index // state.getNumAgents()
+
+            if state.isWin() or state.isLose() or current_depth == self.depth:
+                return self.evaluationFunction(state), None
+
+            legal_actions = state.getLegalActions(agent_index)
+
+            if not legal_actions:
+                return self.evaluationFunction(state), None
+
+            best_action = None
+
+            if agent_index == 0:
+                v = -float('inf')
+                for action in legal_actions:
+                    successor = state.generateSuccessor(agent_index, action)
+                    score, _ = alphaBeta(successor, turn_index + 1, alpha, beta)
+
+                    if score > v:
+                        v, best_action =  score, action
+
+                    if v > beta:
+                        return v, best_action
+
+                    alpha = max(alpha, v)
+                return v, best_action
+
+            else:
+                v = float("inf")
+                for action  in legal_actions:
+                    successor = state.generateSuccessor(agent_index, action)
+                    score, _ = alphaBeta(successor, turn_index + 1, alpha, beta)
+
+                    if score < v:
+                        v, best_action = score, action
+
+                    if v < alpha:
+                        return v, best_action
+
+                    beta = min(beta, v)
+
+                return v, best_action
+
+
+        _, action = alphaBeta(gameState, 0, -float("inf"), float("inf"))
+        return action
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -233,7 +216,44 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def expecitmax(state, turn_index):
+            agent_index = turn_index % state.getNumAgents()
+            current_depth = turn_index // state.getNumAgents()
+
+            if state.isWin() or  state.isLose() or current_depth == self.depth:
+                return self.evaluationFunction(state), None
+
+            legal_actions = state.getLegalActions(agent_index)
+
+            if not legal_actions:
+                return self.evauationFunction(state), None
+
+            if agent_index == 0:
+                best_score = -float("inf")
+                best_action = None
+
+                for action in legal_actions:
+                    successor = state.generateSuccessor(agent_index, action)
+                    score, _ = expecitmax(successor, turn_index + 1)
+
+                    if score > best_score:
+                        best_score, best_action = score, action
+
+                return best_score, best_action
+
+            else:
+                probability = 1.0 / len(legal_actions)
+                expected_score = 0.0
+
+                for action in legal_actions:
+                     successor = state.generateSuccessor(agent_index, action)
+                     score, _ = expecitmax(successor, turn_index + 1)
+                     expected_score += score * probability
+
+                return expected_score, None
+
+        _, action = expecitmax(gameState, 0)
+        return action
 
 
 def betterEvaluationFunction(currentGameState):
