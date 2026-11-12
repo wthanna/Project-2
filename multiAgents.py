@@ -38,7 +38,7 @@ class ReflexAgent(Agent):
         Just like in the previous project, getAction takes a GameState and returns
         some Directions.X for some X in the set {NORTH, SOUTH, WEST, EAST, STOP}
         """
-        # Collect legal moves and successor states
+        # Collect legal moves and successor states/north/south/east/wert
         legalMoves = gameState.getLegalActions()
 
         # Choose one of the best actions
@@ -51,7 +51,96 @@ class ReflexAgent(Agent):
 
         "Add more of your code here if you want to"
 
+
         return legalMoves[chosenIndex]
+
+    def evaluationFunction(self, currentGameState, action):
+        """
+        Design a better evaluation function here.
+
+        The evaluation function takes in the current and proposed successor
+        GameStates (pacman.py) and returns a number, where higher numbers are better.
+
+        The code below extracts some useful information from the state, like the
+        remaining food (newFood) and Pacman position after moving (newPos).
+        newScaredTimes holds the number of moves that each ghost will remain
+        scared because of Pacman having eaten a power pellet.
+
+        Print out these variables to see what you're getting, then combine them
+        to create a masterful evaluation function.
+        """
+        # Useful information you can extract from a GameState (pacman.py)
+        successorGameState = currentGameState.generatePacmanSuccessor(action)
+        newPos = successorGameState.getPacmanPosition()
+        newFood = successorGameState.getFood()
+        newGhostStates = successorGameState.getGhostStates()
+        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+
+        #newCapsules = successorGameState.getCapsules()
+        #currentCapsules = currentGameState.getCapsules()
+
+        "*** YOUR CODE HERE ***"
+        foodList = newFood.asList()
+        Fdistances = []
+        scaredGhosts = []
+        dangerousGhosts =[]
+        foodWeight = 3
+        scaredWeight = 2
+        dangerousWeight = 4
+        dangerThreshold = 5
+        score = 0
+
+        for foodPosition in foodList:
+            distance = manhattanDistance(newPos, foodPosition)
+            Fdistances.append(distance)
+            
+
+        for ghost in newGhostStates:
+            ghostPosition = ghost.getPosition()
+            distance = manhattanDistance(newPos, ghostPosition)
+
+            if ghost.scaredTimer > 0:
+                scaredGhosts.append(distance)
+            else:
+                dangerousGhosts.append(distance)
+
+        
+        
+        if len(Fdistances) > 0:
+            closestFood = min(Fdistances)
+        else:
+             closestFood = None
+
+        if len(scaredGhosts) > 0:
+            closestScaredGhost = min(scaredGhosts)
+        else:
+            closestScaredGhost = None
+
+        if len(dangerousGhosts) > 0:
+            closestDangerousGhost = min(dangerousGhosts)
+        else:
+            closestDangerousGhost = None
+
+           
+        if closestFood is not None:
+            score += foodWeight / (closestFood + 1)
+
+        if closestScaredGhost is not None:
+            score += -closestScaredGhost * scaredWeight
+
+        if closestDangerousGhost is not None:
+            #score += closestDangerousGhost * dangerousWeight
+            if closestDangerousGhost <= dangerThreshold and closestDangerousGhost > 0:
+                penalty = -dangerousWeight/closestDangerousGhost
+                score += penalty
+
+        #if action == Directions.STOP:
+        #    score -= 10
+
+        #if len(newCapsules) < len(currentCapsules):
+        #    score += 50
+
+        return successorGameState.getScore() + score
 
     def evaluationFunction(self, currentGameState, action):
         """
