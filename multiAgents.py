@@ -300,10 +300,44 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: Starts from the game score, rewards being close to food and
+    scared ghosts, penalizes leftover food/capsules and being next to an
+    active ghost.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Big but finite so expectimax averages stay meaningful
+    # (one -inf child would make a whole chance node -inf).
+    if currentGameState.isWin():
+        return 10000 + currentGameState.getScore()
+    if currentGameState.isLose():
+        return -10000 + currentGameState.getScore()
+
+    pos = currentGameState.getPacmanPosition()
+    foodList = currentGameState.getFood().asList()
+    capsules = currentGameState.getCapsules()
+    ghostStates = currentGameState.getGhostStates()
+
+    score = currentGameState.getScore()
+
+    # Food features
+    if foodList:
+        closestFood = min(manhattanDistance(pos, f) for f in foodList)
+        score += 10.0 / closestFood
+    score -= 4 * len(foodList)
+
+    # Capsule feature
+    score -= 20 * len(capsules)
+
+    # Ghost features
+    for ghost in ghostStates:
+        dist = manhattanDistance(pos, ghost.getPosition())
+        if ghost.scaredTimer > dist:
+            # Scared ghost we can catch in time: chase it
+            score += 50.0 / max(dist, 1)
+        elif dist <= 1:
+            # Active ghost right next to us: get away
+            score -= 500
+
+    return score
 
 
 # Abbreviation
